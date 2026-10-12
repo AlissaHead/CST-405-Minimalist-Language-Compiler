@@ -1,0 +1,9 @@
+/* THIS PROGRAM IS SUPPOSED TO FAIL.
+ * A variable declared twice in the same scope.  Every statement is
+ * grammatical, so only the semantic analyzer can catch it.
+ * Expected: one semantic error, "Duplicate Declaration", naming `count`
+ * and line 9. */
+int count;
+count = 1;
+print(count);
+int count;

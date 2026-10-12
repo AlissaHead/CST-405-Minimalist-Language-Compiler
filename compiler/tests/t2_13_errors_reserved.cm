@@ -1,0 +1,8 @@
+/* THIS PROGRAM IS SUPPOSED TO FAIL.
+ * The names t0, t1, t2, ... belong to the compiler: the intermediate code
+ * uses them for temporaries.  A user variable called t1 would silently
+ * collide with a temporary, so the semantic analyzer rejects it.
+ * Expected: one semantic error, "Reserved Identifier", naming `t1`. */
+int t1;
+t1 = 5;
+print(t1);

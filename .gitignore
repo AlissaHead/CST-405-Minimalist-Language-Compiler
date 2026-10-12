@@ -5,11 +5,12 @@ compiler/lex.yy.c
 compiler/parser.tab.c
 compiler/parser.tab.h
 compiler/parser.output
+compiler/tests/unit/test_optimizer
+compiler/tests/unit/test_peephole
 
 # Compiler outputs (written by ./minicompiler on every run)
 *.s
 *.tac
-!compiler/tests/expected/*
 
 # Editor / OS clutter
 .vscode/

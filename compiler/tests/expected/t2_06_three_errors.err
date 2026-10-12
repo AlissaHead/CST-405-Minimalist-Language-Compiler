@@ -1,0 +1,9 @@
+Syntax Error at line 1, column 6: missing ';' after the declaration of 'x'
+     1 | int x
+       |      ^
+Syntax Error at line 3, column 8: expected a value after '+'
+     3 | y = 5 +;
+       |        ^
+Syntax Error at line 4, column 8: missing ')' to close the '(' after print
+     4 | print(y;
+       |        ^

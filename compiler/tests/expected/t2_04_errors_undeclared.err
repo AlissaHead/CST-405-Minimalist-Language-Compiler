@@ -1,0 +1,9 @@
+
+╔════════════════════════════════════════════════════════════╗
+║ SEMANTIC ERROR - Undeclared Variable                      ║
+╚════════════════════════════════════════════════════════════╝
+  📍 Location: Line 8
+  ❌ Error: Variable 'ghost' is used before being declared
+  💡 Suggestion: Add a declaration before using this variable:
+     → int ghost;  (add this before line 8)
+

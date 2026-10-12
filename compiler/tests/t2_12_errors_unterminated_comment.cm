@@ -1,0 +1,10 @@
+/* THIS PROGRAM IS SUPPOSED TO FAIL.
+ * A block comment that is never closed.  The error must point at the line
+ * and column where the comment STARTS (line 9, column 1), and the text
+ * inside the comment must not be reported as a pile of bogus tokens.
+ * Expected: one lexical error, "unterminated comment", at line 9 column 1. */
+int a;
+a = 1;
+print(a);
+/* this comment never ends
+print(a + 1);

@@ -1,0 +1,15 @@
+/* Expected output: 100000000  7  -100000  100000  0
+ * Large values and the algebraic identities the optimizer simplifies
+ * (x*1, x*0, x+0, x-x).  The results must be identical with and without
+ * optimization:
+ *      ./minicompiler tests/t2_09_algebra.cm out.s -O0 -nopeep
+ * produces the same output as the default (fully optimized) build. */
+int big = 100000;
+int one = 1;
+int zero = 0;
+
+print(big * 1000);         // 100,000,000 still fits in a 32-bit register
+print(big * zero + 7);     // x * 0  -> 0
+print(zero - big);         // negative result
+print(big * one + zero);   // x * 1 and x + 0 -> x
+print(big - big);          // 0

@@ -1,0 +1,11 @@
+/* THIS PROGRAM IS SUPPOSED TO FAIL.
+ * Two semantic errors in one file, both on the left-hand side of an
+ * assignment rather than inside print():
+ *   line 9  : `total` is assigned before it is declared (declared on line 10)
+ *   line 11 : `missing` is never declared at all
+ * Expected: the analyzer reports BOTH errors (it does not stop at the first),
+ * each with its own line number. */
+int a = 1;
+total = a + 1;
+int total;
+missing = total;

@@ -1,0 +1,16 @@
+/* Expected output: 14  20  3  -2  46
+ * Operator precedence and associativity.
+ *   - '*' binds tighter than '+' and '-'        a + b * c      = 2 + 12 = 14
+ *   - parentheses override precedence           (a + b) * c    = 5 * 4  = 20
+ *   - '-' is LEFT associative                   10 - 4 - 3     = 3, not 9
+ *   - a negative result must print correctly    a*b - c*a      = 6 - 8  = -2
+ *   - nested parentheses                        ((a+b)*(c+a))+(c*c) = 30 + 16 = 46 */
+int a = 2;
+int b = 3;
+int c = 4;
+
+print(a + b * c);
+print((a + b) * c);
+print(10 - 4 - 3);
+print(a * b - c * a);
+print(((a + b) * (c + a)) + (c * c));

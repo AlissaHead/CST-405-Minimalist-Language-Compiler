@@ -1,0 +1,13 @@
+/* Expected output: 6  5  25
+ * Declarations with an initial value, and variables updated from their own
+ * old value.  Constant propagation has to track each NEW value of x in
+ * order: a stale fact would print the wrong number.
+ *   x = 1 -> x + x = 2 -> x * 3 = 6;   y = x - 1 = 5;   y * y = 25 */
+int x = 1;
+x = x + x;
+x = x * 3;
+int y = x - 1;
+print(x);
+print(y);
+y = y * y;
+print(y);

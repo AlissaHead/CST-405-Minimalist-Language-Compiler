@@ -1,0 +1,10 @@
+/* THIS PROGRAM IS SUPPOSED TO FAIL.
+ * Characters that are not part of the language.  The scanner skips them and
+ * keeps going, so once they are removed the rest parses cleanly -- which is
+ * exactly why the driver must check the lexical error count itself and must
+ * NOT certify this program as correct.
+ * Expected: two lexical errors, '@' at line 8 column 6 and '$' at line 10
+ * column 9, and no code generated. */
+int a@;
+a = 4;
+print(a)$;

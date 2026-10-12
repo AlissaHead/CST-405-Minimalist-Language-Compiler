@@ -1,0 +1,10 @@
+
+╔════════════════════════════════════════════════════════════╗
+║ SEMANTIC ERROR - Reserved Identifier                      ║
+╚════════════════════════════════════════════════════════════╝
+  📍 Location: Line 6
+  ❌ Error: 't1' is reserved for the compiler's own use
+  📖 Note: names of the form t0, t1, ... are three-address-code
+           temporaries and L0, L1, ... are generated labels.
+  💡 Suggestion: rename the variable, for example 't1_' or 'total'
+

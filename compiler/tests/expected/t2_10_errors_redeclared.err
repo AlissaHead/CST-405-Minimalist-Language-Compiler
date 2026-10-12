@@ -1,0 +1,8 @@
+
+╔════════════════════════════════════════════════════════════╗
+║ SEMANTIC ERROR - Duplicate Declaration                    ║
+╚════════════════════════════════════════════════════════════╝
+  📍 Location: Line 9
+  ❌ Error: Variable 'count' is already declared in this scope
+  💡 Suggestion: remove the duplicate, or rename one of the two
+

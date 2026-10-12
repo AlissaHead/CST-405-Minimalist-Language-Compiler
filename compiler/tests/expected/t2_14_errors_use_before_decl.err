@@ -1,0 +1,18 @@
+
+╔════════════════════════════════════════════════════════════╗
+║ SEMANTIC ERROR - Undeclared Variable                      ║
+╚════════════════════════════════════════════════════════════╝
+  📍 Location: Line 9
+  ❌ Error: Variable 'total' is used before being declared
+  💡 Suggestion: Add a declaration before using this variable:
+     → int total;  (add this before line 9)
+
+
+╔════════════════════════════════════════════════════════════╗
+║ SEMANTIC ERROR - Undeclared Variable                      ║
+╚════════════════════════════════════════════════════════════╝
+  📍 Location: Line 11
+  ❌ Error: Variable 'missing' is used before being declared
+  💡 Suggestion: Add a declaration before using this variable:
+     → int missing;  (add this before line 11)
+

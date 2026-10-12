@@ -1,0 +1,5 @@
+// AST demo: 4 statements, uses declaration, assignment, + - * and print
+int a = 2;
+int b;
+b = (a + 3) * 4;
+print(b - a);

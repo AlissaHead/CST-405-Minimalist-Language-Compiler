@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1070 610" width="1070" height="610" font-family="Consolas, 'Courier New', monospace">
+  <rect width="1070" height="610" fill="#ffffff"/>
+  <text x="535" y="14" text-anchor="middle" font-size="16" font-weight="bold" fill="#111">AST built by parser.y for tests/ast_demo.cm</text>
+
+<g transform="translate(30,0)">
+  <!-- edges (parent bottom -> child top) -->
+  <g stroke="#555" stroke-width="1.6" fill="none">
+    <line x1="615" y1="57"  x2="330" y2="93"/>   <!-- root -> L3 -->
+    <line x1="615" y1="57"  x2="900" y2="93"/>   <!-- root -> PRINT -->
+    <line x1="330" y1="127" x2="200" y2="163"/>  <!-- L3 -> L2 -->
+    <line x1="330" y1="127" x2="520" y2="163"/>  <!-- L3 -> ASSIGN b -->
+    <line x1="900" y1="127" x2="900" y2="163"/>  <!-- PRINT -> '-' -->
+    <line x1="200" y1="197" x2="100" y2="233"/>  <!-- L2 -> L1 -->
+    <line x1="200" y1="197" x2="300" y2="233"/>  <!-- L2 -> DECL b -->
+    <line x1="520" y1="197" x2="520" y2="233"/>  <!-- ASSIGN b -> '*' -->
+    <line x1="900" y1="197" x2="830" y2="233"/>  <!-- '-' -> VAR b -->
+    <line x1="900" y1="197" x2="970" y2="233"/>  <!-- '-' -> VAR a -->
+    <line x1="100" y1="267" x2="40"  y2="303"/>  <!-- L1 -> DECL a -->
+    <line x1="100" y1="267" x2="170" y2="303"/>  <!-- L1 -> ASSIGN a -->
+    <line x1="520" y1="267" x2="440" y2="303"/>  <!-- '*' -> '+' -->
+    <line x1="520" y1="267" x2="600" y2="303"/>  <!-- '*' -> NUM 4 -->
+    <line x1="170" y1="337" x2="170" y2="373"/>  <!-- ASSIGN a -> NUM 2 -->
+    <line x1="440" y1="337" x2="380" y2="373"/>  <!-- '+' -> VAR a -->
+    <line x1="440" y1="337" x2="500" y2="373"/>  <!-- '+' -> NUM 3 -->
+  </g>
+
+  <!-- list nodes (grey) -->
+  <g fill="#e5e7eb" stroke="#6b7280" stroke-width="1.6">
+    <rect x="557" y="23"  width="116" height="34" rx="5"/>
+    <rect x="272" y="93"  width="116" height="34" rx="5"/>
+    <rect x="142" y="163" width="116" height="34" rx="5"/>
+    <rect x="42"  y="233" width="116" height="34" rx="5"/>
+  </g>
+  <!-- statement nodes (blue) -->
+  <g fill="#dbeafe" stroke="#2563eb" stroke-width="1.6">
+    <rect x="842" y="93"  width="116" height="34" rx="5"/>  <!-- PRINT -->
+    <rect x="462" y="163" width="116" height="34" rx="5"/>  <!-- ASSIGN b -->
+    <rect x="242" y="233" width="116" height="34" rx="5"/>  <!-- DECL b -->
+    <rect x="-18" y="303" width="116" height="34" rx="5"/>  <!-- DECL a -->
+    <rect x="112" y="303" width="116" height="34" rx="5"/>  <!-- ASSIGN a -->
+  </g>
+  <!-- expression / operator nodes (green) -->
+  <g fill="#dcfce7" stroke="#16a34a" stroke-width="1.6">
+    <rect x="842" y="163" width="116" height="34" rx="5"/>  <!-- '-' -->
+    <rect x="462" y="233" width="116" height="34" rx="5"/>  <!-- '*' -->
+    <rect x="382" y="303" width="116" height="34" rx="5"/>  <!-- '+' -->
+  </g>
+  <!-- leaves (amber) -->
+  <g fill="#fef3c7" stroke="#d97706" stroke-width="1.6">
+    <rect x="772" y="233" width="116" height="34" rx="5"/>  <!-- VAR b -->
+    <rect x="912" y="233" width="116" height="34" rx="5"/>  <!-- VAR a -->
+    <rect x="542" y="303" width="116" height="34" rx="5"/>  <!-- NUM 4 -->
+    <rect x="112" y="373" width="116" height="34" rx="5"/>  <!-- NUM 2 -->
+    <rect x="322" y="373" width="116" height="34" rx="5"/>  <!-- VAR a -->
+    <rect x="442" y="373" width="116" height="34" rx="5"/>  <!-- NUM 3 -->
+  </g>
+
+  <!-- labels -->
+  <g text-anchor="middle" font-size="13" fill="#111">
+    <text x="615" y="45">STMT_LIST</text>
+    <text x="330" y="115">STMT_LIST</text>
+    <text x="200" y="185">STMT_LIST</text>
+    <text x="100" y="255">STMT_LIST</text>
+    <text x="900" y="115">PRINT</text>
+    <text x="520" y="185">ASSIGN b</text>
+    <text x="300" y="255">DECL int b</text>
+    <text x="40"  y="325">DECL int a</text>
+    <text x="170" y="325">ASSIGN a</text>
+    <text x="900" y="185">BINOP '-'</text>
+    <text x="520" y="255">BINOP '*'</text>
+    <text x="440" y="325">BINOP '+'</text>
+    <text x="830" y="255">VAR b</text>
+    <text x="970" y="255">VAR a</text>
+    <text x="600" y="325">NUM 4</text>
+    <text x="170" y="395">NUM 2</text>
+    <text x="380" y="395">VAR a</text>
+    <text x="500" y="395">NUM 3</text>
+  </g>
+</g>
+
+  <!-- source program -->
+  <rect x="20" y="440" width="470" height="150" rx="6" fill="#f8fafc" stroke="#94a3b8"/>
+  <text x="34" y="463" font-size="13" font-weight="bold" fill="#111">Source program (4 statements)</text>
+  <g font-size="14" fill="#111">
+    <text x="34" y="490">1  int a = 2;</text>
+    <text x="34" y="512">2  int b;</text>
+    <text x="34" y="534">3  b = (a + 3) * 4;</text>
+    <text x="34" y="556">4  print(b - a);</text>
+  </g>
+  <text x="34" y="578" font-size="11" fill="#475569">Left-recursive stmt_list: each STMT_LIST = (list so far, new statement).</text>
+
+  <!-- legend + notes -->
+  <rect x="520" y="440" width="500" height="150" rx="6" fill="#f8fafc" stroke="#94a3b8"/>
+  <text x="534" y="463" font-size="13" font-weight="bold" fill="#111">Legend</text>
+  <g stroke-width="1.6">
+    <rect x="534" y="474" width="22" height="14" rx="3" fill="#e5e7eb" stroke="#6b7280"/>
+    <rect x="534" y="496" width="22" height="14" rx="3" fill="#dbeafe" stroke="#2563eb"/>
+    <rect x="534" y="518" width="22" height="14" rx="3" fill="#dcfce7" stroke="#16a34a"/>
+    <rect x="534" y="540" width="22" height="14" rx="3" fill="#fef3c7" stroke="#d97706"/>
+  </g>
+  <g font-size="12" fill="#111">
+    <text x="566" y="486">STMT_LIST: links statements (createStmtList)</text>
+    <text x="566" y="508">Statement: DECL / ASSIGN / PRINT</text>
+    <text x="566" y="530">Operator: BINOP (createBinOp), parentheses leave no node</text>
+    <text x="566" y="552">Leaf: NUM / VAR (createNum, createVar)</text>
+  </g>
+  <text x="534" y="576" font-size="11" fill="#475569">int a = 2; becomes a DECL + ASSIGN pair under one STMT_LIST.</text>
+</svg>

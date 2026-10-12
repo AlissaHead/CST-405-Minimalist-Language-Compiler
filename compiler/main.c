@@ -56,6 +56,7 @@
 extern int yyparse(void);
 extern void flushSyntaxError(void);   /* parser.y */
 extern FILE* yyin;
+extern int lexErrors;                 /* scanner.l: unknown chars, open comments */
 extern ASTNode* root;
 
 int quiet = 0;   /* Set by -q; consulted by the banner helpers below */
@@ -99,12 +100,20 @@ static void deriveTacNames(const char* out, char* tac, char* opt) {
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
-        printf("Usage: %s <input.c> <output.s> [-q]\n", argv[0]);
+        printf("Usage: %s <input.cm> <output.s> [-q] [-O0] [-nopeep]\n", argv[0]);
         printf("Example: ./minicompiler test.c test.s\n");
         return 1;
     }
-    for (int i = 3; i < argc; i++)
-        if (strcmp(argv[i], "-q") == 0) quiet = 1;
+    int optimize = 1;
+    for (int i = 3; i < argc; i++) {
+        if      (strcmp(argv[i], "-q") == 0)      quiet = 1;
+        else if (strcmp(argv[i], "-O0") == 0)     optimize = 0;
+        else if (strcmp(argv[i], "-nopeep") == 0) peepholeEnabled = 0;
+        else {
+            fprintf(stderr, "Error: unknown option '%s' (expected -q, -O0 or -nopeep)\n", argv[i]);
+            return 1;
+        }
+    }
 
     yyin = fopen(argv[1], "r");
     if (!yyin) {
@@ -132,13 +141,18 @@ int main(int argc, char* argv[]) {
     flushSyntaxError();    /* print a parser message no error rule explained */
     endPhase(0);
 
-    if (parseFailed != 0 || root == NULL) {
-        printf("\n✗ Compilation stopped: the program is not syntactically valid.\n");
+    if (parseFailed != 0 || root == NULL || lexErrors > 0) {
+        if (lexErrors > 0 && parseFailed == 0 && root != NULL)
+            printf("\n✗ Compilation stopped: %d lexical error(s) — the scanner met "
+                   "characters that are not part of the language.\n", lexErrors);
+        else
+            printf("\n✗ Compilation stopped: the program is not syntactically valid.\n");
         printf("  Fix the errors listed above and compile again.\n");
         fclose(yyin);
         return 1;
     }
-    if (!quiet) printf("✓ Parse succeeded — the program matches the grammar.\n");
+    if (!quiet) printf("✓ Parse succeeded — no lexical or syntax errors; "
+                       "the program matches the grammar.\n");
 
     beginPhase(1);
     if (!quiet) {
@@ -181,7 +195,8 @@ int main(int argc, char* argv[]) {
 
     /* ---------------- PHASE 5: optimization ------------------------------- */
     beginPhase(4);
-    optimizeTAC();
+    if (optimize) optimizeTAC();
+    else          skipOptimizeTAC();
     if (!quiet) printOptimizedTAC();
     saveOptimizedTACToFile(optTacFile);
     endPhase(4);
@@ -207,6 +222,11 @@ int main(int argc, char* argv[]) {
     if (os.instructionsBefore)
         printf("  (%.1f%% smaller)",
                100.0 * (os.instructionsBefore - os.instructionsAfter) / os.instructionsBefore);
+    printf("\n");
+    if (!optimize) printf("    (disabled with -O0)\n");
+    PeepStats ps = getPeepStats();
+    printf("    peephole (MIPS)       : %d -> %d instructions", ps.linesBefore, ps.linesAfter);
+    if (!peepholeEnabled) printf("  (disabled with -nopeep)");
     printf("\n");
     printf("\n  Code generation\n");
     printRegAllocStats();

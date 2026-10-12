@@ -61,8 +61,16 @@ int tokLine = 1, tokCol = 1;
 int prevEndLine = 1, prevEndCol = 1;
 static int curLine = 1, curCol = 1;             /* scan position            */
 static int lastEndLine = 1, lastEndCol = 1;     /* end of newest real token */
+static int matchLine = 1, matchCol = 1;         /* start of the CURRENT match,
+                                                 * comments included */
+
+/* Lexical errors do not stop the scan (we keep going so that every bad
+ * character in the file is reported at once), but main.c checks this count
+ * and refuses to certify the program if it is not zero. */
+int lexErrors = 0;
 
 static void trackPosition(const char* text, int len) {
+    matchLine = curLine;  matchCol = curCol;
     int skip = text[0] == ' ' || text[0] == '\t' || text[0] == '\n' ||
                text[0] == '\r' || (text[0] == '/' && len > 1);
     if (!skip) {
@@ -112,9 +120,21 @@ static void trackPosition(const char* text, int len) {
 "//".*          { /* Skip single-line comments */ }
 "/*"([^*]|\*+[^*/])*\*+"/"  { /* Skip multi-line comments */ }
 
+    /* UNTERMINATED COMMENT.  This pattern is the closed-comment pattern
+     * without its final "/", so it can match everything up to end of file.
+     * For a comment that IS closed, the rule above matches one character
+     * more and wins by LONGEST MATCH; this rule can only win when there is
+     * no closing star-slash at all.  It swallows the rest of the file, so
+     * the comment's contents are not reported as a cascade of bogus tokens. */
+"/*"([^*]|\*+[^*/])*\**     { lexErrors++;
+                              fprintf(stderr, "Lexical Error at line %d, column %d: "
+                                      "unterminated comment (missing the closing */)\n",
+                                      matchLine, matchCol); }
+
 [ \t\r\n]       { }
 
-.               { fprintf(stderr, "Lexical Error at line %d, column %d: unknown character '%c'\n",
+.               { lexErrors++;
+                  fprintf(stderr, "Lexical Error at line %d, column %d: unknown character '%c'\n",
                          tokLine, tokCol, *yytext); }
 
 %%

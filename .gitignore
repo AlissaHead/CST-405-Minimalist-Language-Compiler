@@ -12,6 +12,9 @@ compiler/tests/unit/test_peephole
 *.s
 *.tac
 
+# Personal notes (video plan) -- not part of the submission
+notes/
+
 # Editor / OS clutter
 .vscode/
 *.swp

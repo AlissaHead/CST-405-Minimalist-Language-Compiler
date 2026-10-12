@@ -1,21 +1,14 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: tac.h   —   Phases 4 & 5 — Intermediate code and optimization
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *                                           ^^^  this file
  *
- * UNCHANGED SINCE TOPIC 1 — the interfaces held, which is the point
- *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Interface from the CST-405 course starter code; OptStats fields for dead stores and
+ *   jump optimizations, and skipOptimizeTAC() (-O0), added by Alissa Head.
  * ========================================================================= */
 
 #ifndef TAC_H
@@ -127,8 +120,8 @@ void generateTAC(ASTNode* node);                                  /* Generate fr
 char* generateTACExpr(ASTNode* node);                             /* Generate for expr */
 
 /* OPTIMIZATION STATISTICS
- * Recorded by optimizeTAC and reported by main.c.  Topic 4 asks students to
- * quantify the gain from optimization; these are the raw numbers to quote. */
+ * Recorded by optimizeTAC and reported by main.c.  They quantify the gain
+ * from optimization; these are the raw numbers to quote. */
 typedef struct {
     int passes;              /* Passes run before reaching a fixed point   */
     int instructionsBefore;  /* TAC instruction count before optimization  */

@@ -1,23 +1,20 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: scanner.l   —   Phase 1 — Lexical analysis
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *   ^^^^^^^  this file
  *
- * WHAT IS NEW IN TOPIC 2
+ * WHAT THIS FILE CONTRIBUTES
  *   • The starter token set: `int`, `print`, identifiers, numbers,
- *   • `+`, `=`, `;`, `(`, `)`, and both comment forms
+ *   • `+`, `-`, `*`, `=`, `;`, `(`, `)`, and both comment forms
+ *   • Lexical errors (unknown characters, unterminated comments) with
+ *     line and column, counted so the driver can refuse the program
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Reference scanner from the CST-405 course starter code (Project 1 token set).
+ *   Lexical-error count and unterminated-comment rule: Alissa Head.
  * ========================================================================= */
 
 %{

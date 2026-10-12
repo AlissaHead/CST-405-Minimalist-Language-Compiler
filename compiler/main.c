@@ -1,21 +1,17 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: main.c   —   The driver — runs all six phases in order
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *
- * WHAT IS NEW IN TOPIC 2
- *   • The six-phase driver every later milestone reuses unchanged
+ * WHAT THIS FILE CONTRIBUTES
+ *   • The six-phase driver: runs each phase, stops at the first phase that
+ *     reports errors, and prints a summary with per-phase timings
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Six-phase driver from the CST-405 course starter code.  Lexical-error check, -O0 and
+ *   -nopeep flags, and the peephole report added by Alissa Head.
  * ========================================================================= */
 
 /* ============================================================================
@@ -35,10 +31,17 @@
  * the work of fixing it.
  *
  * USAGE
- *   ./minicompiler <input.c> <output.s> [-q]
+ *   ./minicompiler <input.cm> <output.s> [-q] [-O0] [-nopeep]
  *
- *   -q   quiet: print only errors and the final summary.  Use this once the
- *        trace stops being useful and you just want the assembly.
+ *   -q        quiet: print only errors and the final summary.  Use this once
+ *             the trace stops being useful and you just want the assembly.
+ *   -O0       skip Phase 5: the back end translates the TAC exactly as
+ *             Phase 4 produced it
+ *   -nopeep   skip the peephole pass over the generated MIPS
+ *
+ *   Exit status is 0 when the program compiled and 1 when any phase found
+ *   an error (lexical, syntax or semantic), so scripts and `make test` can
+ *   tell the two apart.
  *
  * SIDE OUTPUTS (named after <output.s>)
  *   output.tac            the intermediate code before optimization

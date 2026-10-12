@@ -1,22 +1,21 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: tac.c   —   Phases 4 & 5 — Intermediate code and optimization
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *                                           ^^^  this file
  *
- * WHAT IS NEW IN TOPIC 2
- *   • AST -> three-address code, plus the optimizer skeleton
+ * WHAT THIS FILE CONTRIBUTES
+ *   • Phase 4: AST -> three-address code (saved to <output>.tac)
+ *   • Phase 5: a fixed-point optimizer — value passes (folding, propagation,
+ *     algebraic identities, dead code / dead stores) and a flow pass
+ *     (branch simplification, jump threading, unreachable code)
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Temporary/label allocation and list handling from the CST-405 course starter code.
+ *   AST -> TAC translation and the optimizer, including dead store
+ *   elimination and the flow-optimization pass: Alissa Head.
  * ========================================================================= */
 
 #include <stdio.h>
@@ -400,8 +399,7 @@ void saveOptimizedTACToFile(const char* filename) { saveList(&optimizedList, fil
  *
  * (Peephole optimization runs later, on the generated MIPS: see peephole.c.)
  *
- * SAFETY RULES the passes obey, and that students must not break when they
- * extend this file:
+ * SAFETY RULES every pass obeys (and any new pass must obey too):
  *   • A LABEL ends a basic block: forget everything known about values,
  *     because control can arrive here from anywhere.
  *   • A CALL may modify globals and arrays: forget facts about non-temporaries.

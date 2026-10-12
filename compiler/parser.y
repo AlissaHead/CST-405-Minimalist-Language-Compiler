@@ -1,24 +1,19 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: parser.y   —   Phase 2 — Syntax analysis
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *              ^^^^^^  this file
  *
- * WHAT IS NEW IN TOPIC 2
- *   • The starter grammar: a program is a list of statements
- *   • Declaration, assignment, addition, and print
+ * WHAT THIS FILE CONTRIBUTES
+ *   • The grammar: a program is a list of statements
+ *   • Declaration (optionally with a value), assignment, + - * ( ), and print
  *   • Error productions that name the mistake instead of just saying "syntax error"
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Prologue (%union, %token, precedence table, yyerror) from the CST-405 course starter code.
+ *   Grammar rules, semantic actions and error productions: Alissa Head.
  * ========================================================================= */
 
 %{
@@ -127,50 +122,46 @@ static int  endsStatement(int tok);
 %%
 
 /* --------------------------------------------------------------------
- * TODO (Topic 2) — THE GRAMMAR
- * Everything above this line is given: the token declarations, the
- * precedence table, and the union that lets a rule hand back an ASTNode*.
- * Below it, write the rules.  Each rule needs a semantic action in { }
- * that builds one AST node and assigns it to $$.
- *
- * THE GRAMMAR YOU ARE IMPLEMENTING
+ * THE GRAMMAR (as implemented below)
  *
  *     program     ->  stmt_list
  *     stmt_list   ->  stmt  |  stmt_list stmt
- *     stmt        ->  decl  |  assign  |  print_stmt
- *     decl        ->  'int' ID ';'
+ *     stmt        ->  decl  |  assign  |  print_stmt  |  error ';'
+ *     decl        ->  'int' ID ';'  |  'int' ID '=' expr ';'
  *     assign      ->  ID '=' expr ';'
- *     expr        ->  NUM  |  ID  |  expr '+' expr
+ *     expr        ->  NUM  |  ID  |  expr '+' expr  |  expr '-' expr
+ *                  |  expr '*' expr  |  '(' expr ')'
  *     print_stmt  ->  'print' '(' expr ')' ';'
  *
- * THE ACTIONS YOU NEED
+ * The expression grammar is ambiguous on purpose; the %left declarations
+ * above resolve it: '*' binds tighter than '+'/'-', and all three are left
+ * associative, so  a - b - c  parses as (a - b) - c.  Writing the grammar
+ * this way keeps it short and keeps the AST free of the extra
+ * term/factor nodes an unambiguous grammar would need.
  *
- *     program    : stmt_list          { root = $1; }
- *     stmt_list  : stmt_list stmt     { $$ = createStmtList($1, $2); }
- *     decl       : INT ID ';'         { $$ = createDecl("int", $2); free($2); }
- *     assign     : ID '=' expr ';'    { $$ = createAssign($1, $3); free($1); }
- *     expr       : expr '+' expr      { $$ = createBinOp('+', $1, $3); }
- *     print_stmt : PRINT '(' expr ')' ';'  { $$ = createPrint($3); }
+ * DESIGN DECISIONS
  *
- * TWO THINGS THAT WILL BITE YOU
+ *   One AST node per action.  Every rule's action builds at most one node
+ *   with the constructors in ast.c and hands it up as $$.  Parentheses
+ *   build NOTHING ( '(' expr ')' just passes $2 up): the tree's shape
+ *   already records the grouping, which is exactly why it is an ABSTRACT
+ *   syntax tree.
  *
- *   free($2) on an ID.  The scanner strdup'd the identifier text; the AST
- *   constructor strdup's it again.  Whoever received it from the scanner
- *   has to free it, and that is this rule.  Skip it and the compiler
- *   leaks — small here, embarrassing under valgrind in Topic 6.
+ *   'int x = e;' is sugar.  It becomes a DECL followed by an ASSIGN, so no
+ *   later phase needs a special case for initialized declarations.
  *
- *   `root` is a global declared in the prologue above.  The `program` rule
- *   is the ONLY place that assigns it.  If root stays NULL after a
- *   successful parse, that assignment is missing and every later phase
- *   will silently do nothing.
+ *   Memory.  The scanner strdup's every identifier; the AST constructors
+ *   copy it again, so each rule that receives an ID frees its copy.
  *
- * GOING FURTHER (worth doing, and worth talking about in your video)
+ *   `root` is assigned in exactly one place, the `program` rule, and only
+ *   when no syntax error was seen (even a recovered one).
  *
- *   Add ERROR PRODUCTIONS so that a missing semicolon produces
- *     "line 4: missing ';' after assignment to x"
- *   instead of "syntax error".  The shape is:
- *     | ID '=' expr error  { report it; $$ = NULL; yyerrok; }
- *   Error messages are most of what people judge a compiler by.
+ *   Error productions.  Instead of Bison's generic "syntax error", the
+ *   rules ending in `error` recognise the common mistakes — a missing ';',
+ *   a missing ')', an operator with no right operand — and report them with
+ *   the line and column where the missing token belonged.  `error ';'` is
+ *   panic-mode recovery: skip to the next ';' and keep parsing, so ONE run
+ *   reports every syntax error in the file (see tests/t2_06_three_errors.cm).
  * -------------------------------------------------------------------- */
 
 /* -- PROGRAM ------------------------------------------------------------

@@ -1,21 +1,16 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: symtab.c   —   Phases 3 & 6 — Symbol table / storage map
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *
- * WHAT IS NEW IN TOPIC 2
+ * WHAT THIS FILE CONTRIBUTES
  *   • Four bytes per int, handed out in declaration order
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Symbol table insert and lookup: Alissa Head.
+ *   (Interface in symtab.h from the CST-405 course starter code.)
  * ========================================================================= */
 
 /* ============================================================================
@@ -29,7 +24,7 @@
  *   int scores[10];     (inside main)    ->  4($sp) .. 40($sp)   (40 bytes)
  *   int sum(int a[])    (parameter)      ->  0($sp) holds a POINTER to a[0]
  *
- * The last line is the one students trip over: an array parameter does not
+ * The last line is the subtle one: an array parameter does not
  * copy the array. It receives the caller's base address, so the callee's slot
  * is one word wide no matter how large the array is. That is why
  * `isParamArray` exists and why addArrayParam reserves 4 bytes, not size*4.

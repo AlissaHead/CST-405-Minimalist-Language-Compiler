@@ -1,22 +1,16 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: semantic.c   —   Phase 3 — Semantic analysis
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *                               ^^^^^^^^  this file
  *
- * WHAT IS NEW IN TOPIC 2
+ * WHAT THIS FILE CONTRIBUTES
  *   • Undeclared variables and duplicate declarations, reported with line numbers
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Semantic checks: Alissa Head.
  * ========================================================================= */
 
 /* SEMANTIC ANALYSIS IMPLEMENTATION - WITH FUNCTION SUPPORT

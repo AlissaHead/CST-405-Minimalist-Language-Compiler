@@ -1,22 +1,19 @@
 /* =========================================================================
- * CST-405  ·  TOPIC 2  ·  Compiler for a Starter Language
+ * CST-405  ·  Project 2  ·  Minimalist Language Compiler
  * FILE: codegen.c   —   Phase 6 — MIPS code generation
  * -------------------------------------------------------------------------
  * THE PIPELINE, AND WHERE THIS FILE SITS IN IT
  *   scanner -> parser -> ast -> semantic -> tac -> codegen
  *                                                  ^^^^^^^  this file
  *
- * WHAT IS NEW IN TOPIC 2
+ * WHAT THIS FILE CONTRIBUTES
  *   • TAC -> MIPS: a register cache over memory homes, and syscalls for print
+ *   • The finished assembly goes through the peephole pass (peephole.c)
+ *     before it is saved to the .s file
  *
- * WHAT COMES NEXT
- *   Topic 3 adds functions, arrays and the rest of arithmetic — and with them, real activation records.
- *
- * YOUR TASK
- *   This is Project 2: the first compiler you build end to end.  Sections
- *   marked  TODO (Topic 2)  are yours.  Everything else — the headers, the
- *   scanner, the driver, the register allocator — is given, because the
- *   point of this project is the six PHASES, not the plumbing between them.
+ * CREDITS
+ *   Parts 1-3 (register cache, addressing, frame layout) from the CST-405 course starter code.
+ *   Part 4 (instruction selection) and Part 5 (peephole hookup): Alissa Head.
  * ========================================================================= */
 
 /* ============================================================================
@@ -153,7 +150,7 @@ static int findVarReg(const char* name) {
 
 /* Least-recently-used register — the one whose value we can most afford
  * to lose.  A real compiler would use liveness information here; LRU is a
- * good approximation and is easy to reason about in class. */
+ * good approximation and is easy to reason about. */
 static int selectVictimReg(void) {
     int victim = 0, oldest = regAlloc.regs[0].lastUsed;
     for (int i = 1; i < NUM_TEMP_REGS; i++) {
@@ -491,8 +488,8 @@ void generateMIPSFromTAC(const char* filename) {
 
                 case TAC_DECL: {
                     /* No instruction: layoutFrame() already reserved the slot.
-                     * A comment is worth it — you will be glad of it the first
-                     * time you read your own assembly. */
+                     * The comment makes the generated assembly readable:
+                     * every variable's stack slot is named where it is declared. */
                     Symbol* s = lookupSymbol(i->result);
                     fprintf(out, "    # %s lives at %d($sp)\n",
                             i->result, s ? s->offset : -1);

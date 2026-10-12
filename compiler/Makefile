@@ -2,7 +2,10 @@
 # CST-405 mini compiler — build rules
 # ----------------------------------------------------------------------------
 #   make            build ./minicompiler
-#   make test       compile and run every program in tests/ under SPIM
+#   make test       compile every tests/*.cm, run it under SPIM, and compare
+#                   with tests/expected/ (PASS/FAIL per test)
+#   make unittest   unit tests for the TAC optimizer and the peephole pass
+#   make check      both of the above
 #   make clean      remove everything that `make` produced
 #
 # The two generated files are worth knowing about:

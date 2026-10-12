@@ -517,9 +517,13 @@ void generateMIPSFromTAC(const char* filename) {
                     int a = operandReg(i->arg1);
                     int b = operandReg(i->arg2);
                     int d = defReg(i->result);
+                    /* the comment repeats the TAC instruction, with the
+                     * source operator, so the .s file reads against the .tac */
+                    const char* sym = i->op == TAC_ADD ? "+" : i->op == TAC_SUB ? "-"
+                                    : i->op == TAC_MUL ? "*" : "/";
                     fprintf(out, "    %-4s $t%d, $t%d, $t%d      # %s = %s %s %s\n",
                             mnemonicFor(i->op), d, a, b,
-                            i->result, i->arg1, mnemonicFor(i->op), i->arg2);
+                            i->result, i->arg1, sym, i->arg2);
                     break;
                 }
 

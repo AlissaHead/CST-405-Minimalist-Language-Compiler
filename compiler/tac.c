@@ -304,7 +304,8 @@ void formatTAC(const TACInstr* i, char* buf, size_t n) {
         case TAC_CALL:       snprintf(buf, n, "%s = CALL %s, %s",
                                       i->result, i->arg1, i->arg2); break;
         case TAC_RETURN:     if (i->arg1) snprintf(buf, n, "RETURN %s", i->arg1);
-                             else         snprintf(buf, n, "RETURN"); break;
+                             else         snprintf(buf, n, "RETURN");
+                             break;
         case TAC_LABEL:      snprintf(buf, n, "%s:", i->result); break;
         case TAC_GOTO:       snprintf(buf, n, "GOTO %s", i->arg1); break;
         case TAC_IF_FALSE:   snprintf(buf, n, "IF_FALSE %s GOTO %s", i->arg1, i->arg2); break;
@@ -389,9 +390,15 @@ void saveOptimizedTACToFile(const char* filename) { saveList(&optimizedList, fil
  *   3. Constant propagation       replace a variable by a constant known to
  *                                 hold it at that point
  *   4. Copy propagation           replace t1 by x after "t1 = x"
- *   5. Dead code elimination      drop assignments to names never read again
- *   6. Unreachable code removal   drop code between GOTO and the next label
+ *   5. Dead code elimination      drop assignments to temps never read again
+ *   6. Dead store elimination     the same for locals, in straight-line code
+ *   --- flow optimization (flowPass, run after the value passes) ---
  *   7. Branch simplification      constant conditions become GOTO or nothing
+ *   8. Jump threading             a jump to a jump goes straight to the end
+ *   9. Jump-to-next removal       GOTO L immediately followed by L:
+ *  10. Unreachable code removal   drop code between GOTO/RETURN and next label
+ *
+ * (Peephole optimization runs later, on the generated MIPS: see peephole.c.)
  *
  * SAFETY RULES the passes obey, and that students must not break when they
  * extend this file:
@@ -548,6 +555,149 @@ static int isTempName(const char* s) {
     return 1;
 }
 
+/* Is `name` declared (DECL) inside the function that starts at `func`?
+ * Only such locals are candidates for dead store elimination. */
+static int isDeclaredLocal(TACInstr* func, const char* name) {
+    for (TACInstr* c = func->next; c && c->op != TAC_FUNC_END; c = c->next)
+        if (c->op == TAC_DECL && c->result && strcmp(c->result, name) == 0)
+            return 1;
+    return 0;
+}
+
+/* Does the function starting at `func` contain no labels (and therefore no
+ * jump targets)?  In straight-line code "not read later in the listing" is
+ * the same as "not read later at run time", which is what DSE relies on. */
+static int functionIsStraightLine(TACInstr* func) {
+    for (TACInstr* c = func->next; c && c->op != TAC_FUNC_END; c = c->next)
+        if (c->op == TAC_LABEL) return 0;
+    return 1;
+}
+
+/* Append helper for the passes below. */
+static void pushInstr(TACList* l, TACInstr* src) {
+    TACInstr* n = createTAC(src->op, src->arg1, src->arg2, src->result);
+    if (!l->head) l->head = l->tail = n;
+    else { l->tail->next = n; l->tail = n; }
+}
+
+/* The label a jump instruction targets, or NULL if `c` is not a jump. */
+static char* jumpTarget(TACInstr* c) {
+    if (c->op == TAC_GOTO) return c->arg1;
+    if (c->op == TAC_IF_FALSE || c->op == TAC_IF_TRUE) return c->arg2;
+    return NULL;
+}
+
+/* Find the LABEL instruction named `label` in list `l`. */
+static TACInstr* findLabel(TACList* l, const char* label) {
+    for (TACInstr* c = l->head; c; c = c->next)
+        if (c->op == TAC_LABEL && strcmp(c->result, label) == 0) return c;
+    return NULL;
+}
+
+/* -------------------------------------------------------------------------
+ * FLOW OPTIMIZATION — one pass over `in`, producing a new list.
+ *
+ * These transformations work on the CONTROL FLOW of the program rather than
+ * on the values it computes:
+ *
+ *   a. Branch simplification   IF_FALSE 0 GOTO L  ->  GOTO L
+ *                              IF_FALSE 5 GOTO L  ->  (removed: never taken)
+ *                              (and the mirror image for IF_TRUE).
+ *                              The condition becomes a literal after
+ *                              constant propagation, which is why this pass
+ *                              runs after optimizePass() in every round.
+ *   b. Jump threading          GOTO L1 ... L1: GOTO L2   ->   GOTO L2
+ *                              (a jump to a jump goes straight to the end)
+ *   c. Jump-to-next removal    GOTO L ; L:   ->   L:
+ *   d. Unreachable code        everything after an unconditional GOTO or
+ *                              RETURN up to the next LABEL can never run.
+ *                              Declarations are kept: they produce no code
+ *                              but layoutFrame() still needs them.
+ *
+ * The starter language has no if/while yet, so a real program never gives
+ * this pass a jump to work on — but the IR already contains the jump
+ * opcodes (tac.h), and tests/unit/test_optimizer.c exercises every case
+ * here directly so the pass is proven before Topic 4 starts emitting jumps.
+ * -----------------------------------------------------------------------*/
+static TACList flowPass(TACList* in) {
+    TACList out = { NULL, NULL, in->tempCount, in->labelCount };
+    int unreachable = 0;     /* 1 while skipping code after GOTO/RETURN */
+
+    for (TACInstr* c = in->head; c; c = c->next) {
+        /* A label or the end of a function makes code reachable again. */
+        if (c->op == TAC_LABEL || c->op == TAC_FUNC_END || c->op == TAC_FUNC_BEGIN)
+            unreachable = 0;
+
+        if (unreachable) {
+            if (c->op == TAC_DECL || c->op == TAC_ARRAY_DECL || c->op == TAC_PARAM) {
+                pushInstr(&out, c);          /* storage, not code: keep it */
+            } else {
+                optStats.unreachable++;
+                changesThisPass++;
+            }
+            continue;
+        }
+
+        TACInstr tmp = *c;                   /* the instruction we will emit */
+
+        /* (a) branch simplification */
+        if ((c->op == TAC_IF_FALSE || c->op == TAC_IF_TRUE) && isConstantNumber(c->arg1)) {
+            int truth = atol(c->arg1) != 0;
+            int taken = (c->op == TAC_IF_TRUE) ? truth : !truth;
+            optStats.branch++;
+            changesThisPass++;
+            if (!taken) continue;            /* never jumps: drop it entirely */
+            tmp.op = TAC_GOTO; tmp.arg1 = c->arg2; tmp.arg2 = NULL;   /* always jumps */
+        }
+
+        /* (b) jump threading — follow a chain of "L: GOTO L'" to its end.
+         * A chain that loops back on itself (L1: GOTO L2 / L2: GOTO L1) is an
+         * infinite loop in the source; it is left exactly as written. */
+        char* target = jumpTarget(&tmp);
+        if (target) {
+            char* seen[8];
+            int   hops = 0, cycle = 0;
+            char* t = target;
+            seen[hops++] = t;
+            while (hops < 8) {
+                TACInstr* lbl = findLabel(in, t);
+                TACInstr* after = lbl ? lbl->next : NULL;
+                while (after && after->op == TAC_LABEL) after = after->next;
+                if (!after || after->op != TAC_GOTO) break;
+                t = after->arg1;
+                for (int k = 0; k < hops; k++)
+                    if (strcmp(seen[k], t) == 0) cycle = 1;
+                if (cycle) break;
+                seen[hops++] = t;
+            }
+            if (!cycle && t != target) {
+                optStats.jumpThread++;
+                changesThisPass++;
+                target = t;
+                if (tmp.op == TAC_GOTO) tmp.arg1 = target; else tmp.arg2 = target;
+            }
+        }
+
+        /* (c) jump to the very next instruction: the jump does nothing */
+        if (target) {
+            int isNext = 0;
+            for (TACInstr* n = c->next; n && n->op == TAC_LABEL; n = n->next)
+                if (strcmp(n->result, target) == 0) { isNext = 1; break; }
+            if (isNext) {
+                optStats.jumpToNext++;
+                changesThisPass++;
+                continue;
+            }
+        }
+
+        pushInstr(&out, &tmp);
+
+        /* (d) what follows an unconditional transfer is dead until a label */
+        if (tmp.op == TAC_GOTO || tmp.op == TAC_RETURN) unreachable = 1;
+    }
+    return out;
+}
+
 /* -------------------------------------------------------------------------
  * One optimization pass over `in`, producing `out`.
  *
@@ -635,15 +785,35 @@ static TACList optimizePass(TACList* in) {
      * A pure, value-producing instruction (arithmetic, comparison, array
      * load — or an ASSIGN into a temporary, which is what algebraic
      * simplification and folding rewrite into above) is dead if nothing
-     * from here to the end of the function ever reads its result.  Never
-     * applied to a real variable: this compiler does not track globals and
-     * arrays precisely enough to prove one is unused. */
+     * from here to the end of the function ever reads its result.
+     *
+     * --- dead store elimination ------------------------------------------
+     * The same test is extended to REAL variables, but only where it can be
+     * proven safe: the variable must be a local DECLared in this function
+     * (globals outlive the function and could be read elsewhere), and the
+     * function must be straight-line code with no labels (with a backward
+     * jump, a read that appears EARLIER in the listing could still run
+     * after the store).  In the starter language every variable is a local
+     * of the implicit main() and there are no jumps, so after propagation
+     * has replaced every read with its constant, the stores themselves
+     * become dead:   r = 6 ; PRINT 6   ->   PRINT 6 */
     TACList out = { NULL, NULL, mid.tempCount, mid.labelCount };
+    TACInstr* func = NULL;          /* FUNC_BEGIN of the function we are in */
     for (TACInstr* c = mid.head; c; c = c->next) {
+        if (c->op == TAC_FUNC_BEGIN) func = c;
+
         int eligible = mnemonicIsPure(c->op) ||
                        (c->op == TAC_ASSIGN && isTempName(c->result));
         if (eligible && c->result && !isReadLater(c->next, c->result)) {
             optStats.deadCode++;
+            changesThisPass++;
+            continue;   /* drop it */
+        }
+        if (c->op == TAC_ASSIGN && c->result && !isTempName(c->result) &&
+            func && functionIsStraightLine(func) &&
+            isDeclaredLocal(func, c->result) &&
+            !isReadLater(c->next, c->result)) {
+            optStats.deadStore++;
             changesThisPass++;
             continue;   /* drop it */
         }
@@ -664,8 +834,8 @@ void optimizeTAC(void) {
     trace("Running optimization passes until no further change:\n");
     do {
         changesThisPass = 0;
-        TACList next = optimizePass(&work);
-        work = next;
+        TACList next = optimizePass(&work);   /* values: fold, propagate, DCE */
+        work = flowPass(&next);               /* control: branches, jumps     */
         pass++;
         trace("  pass %d: %3d change(s), %3d instructions\n",
                pass, changesThisPass, countTAC(&work));
@@ -686,9 +856,22 @@ void optimizeTAC(void) {
     trace("  Constant propagation          %6d\n", optStats.constProp);
     trace("  Copy propagation              %6d\n", optStats.copyProp);
     trace("  Dead code elimination         %6d\n", optStats.deadCode);
+    trace("  Dead store elimination        %6d\n", optStats.deadStore);
     trace("  Unreachable code removal      %6d\n", optStats.unreachable);
     trace("  Branch simplification         %6d\n", optStats.branch);
+    trace("  Jump threading                %6d\n", optStats.jumpThread);
+    trace("  Jump-to-next removal          %6d\n", optStats.jumpToNext);
     trace("  ─────────────────────────────────────────\n");
     trace("  TAC instructions   %d -> %d  (%d removed, %.1f%% smaller)\n\n",
            optStats.instructionsBefore, optStats.instructionsAfter, removed, pct);
+}
+
+/* -O0: hand the back end an unmodified copy of the TAC.  Comparing the .s
+ * file this produces with the optimized one shows exactly what Phase 5 buys
+ * (and gives the peephole pass in codegen more to do). */
+void skipOptimizeTAC(void) {
+    memset(&optStats, 0, sizeof optStats);
+    optimizedList = copyList(&tacList);
+    optStats.instructionsBefore = optStats.instructionsAfter = countTAC(&optimizedList);
+    trace("Optimization disabled (-O0): the back end will use the TAC unchanged.\n");
 }

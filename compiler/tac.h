@@ -138,13 +138,17 @@ typedef struct {
     int constProp;           /* Variables replaced by a known constant     */
     int copyProp;            /* Copies replaced by their source            */
     int deadCode;            /* Assignments removed as never read          */
+    int deadStore;           /* Stores to locals never read again removed  */
     int unreachable;         /* Instructions removed as unreachable        */
     int branch;              /* Constant-condition branches simplified     */
+    int jumpToNext;          /* "GOTO L" removed because L is the next line */
+    int jumpThread;          /* "GOTO L1" retargeted past "L1: GOTO L2"    */
 } OptStats;
 
 /* TAC OPTIMIZATION AND OUTPUT */
 void printTAC(void);                        /* Display unoptimized listing        */
 void optimizeTAC(void);                     /* Run optimization to a fixed point  */
+void skipOptimizeTAC(void);                 /* -O0: back end uses the TAC as-is   */
 void printOptimizedTAC(void);               /* Display optimized listing          */
 TACList* getOptimizedTAC(void);             /* The list the back end consumes     */
 TACList* getUnoptimizedTAC(void);           /* The list before optimization       */

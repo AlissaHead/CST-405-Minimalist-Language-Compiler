@@ -16,7 +16,7 @@ YACC   = bison
 CFLAGS = -g -Wall
 
 TARGET = minicompiler
-OBJS   = lex.yy.o parser.tab.o main.o ast.o symtab.o semantic.o codegen.o tac.o
+OBJS   = lex.yy.o parser.tab.o main.o ast.o symtab.o semantic.o codegen.o tac.o peephole.o
 
 all: $(TARGET)
 
@@ -45,10 +45,12 @@ symtab.o:   symtab.c symtab.h trace.h
 	$(CC) $(CFLAGS) -c symtab.c
 semantic.o: semantic.c semantic.h ast.h symtab.h trace.h
 	$(CC) $(CFLAGS) -c semantic.c
-codegen.o:  codegen.c codegen.h ast.h symtab.h tac.h trace.h
+codegen.o:  codegen.c codegen.h peephole.h ast.h symtab.h tac.h trace.h
 	$(CC) $(CFLAGS) -c codegen.c
 tac.o:      tac.c tac.h ast.h trace.h
 	$(CC) $(CFLAGS) -c tac.c
+peephole.o: peephole.c peephole.h
+	$(CC) $(CFLAGS) -c peephole.c
 
 # ----------------------------------------------------------------------------
 # Compile every tests/*.cm file and run the result in SPIM.  Each test file
@@ -56,14 +58,28 @@ tac.o:      tac.c tac.h ast.h trace.h
 # regression suite.
 # ----------------------------------------------------------------------------
 test: $(TARGET)
-	@for f in tests/*.cm; do \
-	   echo "── $$f ─────────────────────────────────────────"; \
-	   ./$(TARGET) $$f $${f%.cm}.s -q > /dev/null || { echo "  COMPILE FAILED"; continue; }; \
-	   spim -file $${f%.cm}.s 2>/dev/null | grep -v '^Loaded'; \
-	done
+	@echo "Regression tests (tests/*.cm against tests/expected/)"
+	@bash tests/run_tests.sh
+
+# ----------------------------------------------------------------------------
+# Unit tests for the two optimizers, on hand-built input the starter
+# language cannot produce yet (jumps, labels, spill/reload traffic).
+# ----------------------------------------------------------------------------
+UNIT = tests/unit/test_optimizer tests/unit/test_peephole
+
+tests/unit/test_optimizer: tests/unit/test_optimizer.c tac.o
+	$(CC) $(CFLAGS) -o $@ $^
+tests/unit/test_peephole: tests/unit/test_peephole.c peephole.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+unittest: $(UNIT)
+	@status=0; for t in $(UNIT); do ./$$t || status=1; echo; done; exit $$status
+
+# Everything: unit tests, then the regression suite.
+check: unittest test
 
 clean:
 	rm -f $(TARGET) $(OBJS) lex.yy.c parser.tab.c parser.tab.h parser.output
-	rm -f tests/*.s tests/*.tac *.s *.tac
+	rm -f tests/*.s tests/*.tac *.s *.tac $(UNIT)
 
-.PHONY: all clean test
+.PHONY: all clean test unittest check

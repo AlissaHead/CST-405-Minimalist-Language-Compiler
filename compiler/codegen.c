@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "codegen.h"
+#include "peephole.h"
 #include "symtab.h"
 #include "trace.h"
 
@@ -403,9 +404,62 @@ static void emitDataSection(TACInstr* head) {
     fprintf(out, "\n.text\n.globl main\n");
 }
 
+/* ==========================================================================
+ * PART 5 — PEEPHOLE PASS AND OUTPUT
+ * --------------------------------------------------------------------------
+ * Instruction selection writes into a temporary file rather than straight
+ * into the .s file.  When it is finished the text is read back as an array
+ * of lines, handed to peepholeOptimize() (peephole.c), and only then written
+ * to the real output.  Keeping the two steps apart means instruction
+ * selection can stay simple — one TAC instruction at a time — and leave the
+ * clean-up of redundancies across instruction boundaries to the peephole.
+ * ========================================================================*/
+int peepholeEnabled = 1;          /* cleared by the -nopeep flag in main.c   */
+static PeepStats peepStats;
+
+PeepStats getPeepStats(void) { return peepStats; }
+
+static void peepholeAndWrite(FILE* tmp, const char* filename) {
+    /* read the generated assembly back, one malloc'd string per line */
+    int cap = 256, n = 0;
+    char** lines = malloc(cap * sizeof *lines);
+    char buf[512];
+    rewind(tmp);
+    while (fgets(buf, sizeof buf, tmp)) {
+        buf[strcspn(buf, "\n")] = '\0';
+        if (n == cap) { cap *= 2; lines = realloc(lines, cap * sizeof *lines); }
+        lines[n++] = strdup(buf);
+    }
+    fclose(tmp);
+
+    memset(&peepStats, 0, sizeof peepStats);
+    if (peepholeEnabled) {
+        n = peepholeOptimize(lines, n, &peepStats);
+        trace("\n  Peephole optimization (%d sweep(s))\n", peepStats.passes);
+        trace("    self moves removed        %4d\n", peepStats.selfMove);
+        trace("    store->load forwarded     %4d\n", peepStats.storeLoad);
+        trace("    load->store removed       %4d\n", peepStats.loadStore);
+        trace("    dead register writes      %4d\n", peepStats.deadWrite);
+        trace("    jumps to next removed     %4d\n", peepStats.jumpToNext);
+        trace("    jumps threaded            %4d\n", peepStats.jumpThread);
+        trace("    MIPS instructions  %d -> %d\n", peepStats.linesBefore, peepStats.linesAfter);
+    } else {
+        peepStats.linesBefore = peepStats.linesAfter = countInstructions(lines, n);
+        trace("\n  Peephole optimization disabled (-nopeep)\n");
+    }
+
+    FILE* f = fopen(filename, "w");
+    if (!f) { fprintf(stderr, "Cannot open output file %s\n", filename); exit(1); }
+    for (int i = 0; i < n; i++) { fprintf(f, "%s\n", lines[i]); free(lines[i]); }
+    free(lines);
+    fclose(f);
+}
+
 void generateMIPSFromTAC(const char* filename) {
-    out = fopen(filename, "w");
-    if (!out) { fprintf(stderr, "Cannot open output file %s\n", filename); exit(1); }
+    /* everything below writes to `out`, which is a scratch file until the
+     * peephole pass has run (see PART 5) */
+    out = tmpfile();
+    if (!out) { fprintf(stderr, "Cannot create a temporary file for %s\n", filename); exit(1); }
 
     initRegAlloc();
 
@@ -527,5 +581,6 @@ void generateMIPSFromTAC(const char* filename) {
         emitEpilogue(currentFunc, frameSize);
     }
 
-    fclose(out);
+    peepholeAndWrite(out, filename);   /* closes the scratch file */
+    out = NULL;
 }

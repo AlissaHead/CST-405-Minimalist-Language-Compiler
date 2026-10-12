@@ -97,7 +97,13 @@ typedef struct {
 void initRegAlloc(void);
 void printRegAllocStats(void);
 
-/* The one entry point: translate the optimized TAC into a MIPS .s file. */
+/* The one entry point: translate the optimized TAC into a MIPS .s file.
+ * The assembly passes through the peephole optimizer (peephole.c) on its way
+ * to the file unless `peepholeEnabled` is 0 (the -nopeep flag). */
 void generateMIPSFromTAC(const char* filename);
+
+#include "peephole.h"
+extern int peepholeEnabled;
+PeepStats getPeepStats(void);       /* what the peephole pass removed */
 
 #endif

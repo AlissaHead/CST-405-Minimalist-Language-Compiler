@@ -1,0 +1,20 @@
+# Build artefacts produced by `make` -- regenerated from source, never committed
+*.o
+compiler/minicompiler
+compiler/lex.yy.c
+compiler/parser.tab.c
+compiler/parser.tab.h
+compiler/parser.output
+
+# Compiler outputs (written by ./minicompiler on every run)
+*.s
+*.tac
+!compiler/tests/expected/*
+
+# Editor / OS clutter
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -8,6 +8,14 @@ source file through six phases (scanning, parsing, semantic analysis,
 three-address code, optimization and code generation) and writes MIPS assembly
 that runs in SPIM / QtSPIM.
 
+### ▶ Video walkthrough
+
+[![Video: how the compiler works, and a live demo](https://img.youtube.com/vi/XlTVgPnq-Oo/hqdefault.jpg)](https://youtu.be/XlTVgPnq-Oo)
+
+**Watch on YouTube: https://youtu.be/XlTVgPnq-Oo.** It covers how the code
+works, the tasks I completed, how the AST is turned into intermediate code and
+MIPS, and a live demo.
+
 ```
 source.cm ──► scanner ──► parser ──► semantic ──► TAC ──► optimizer ──► codegen ──► peephole ──► source.s
              (tokens)     (AST)      (verdict)   (.tac)  (.optimized.tac)  (MIPS)               (file)

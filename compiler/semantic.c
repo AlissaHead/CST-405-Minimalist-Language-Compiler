@@ -247,6 +247,11 @@ static void checkStmt(ASTNode* node) {
             if (isReservedName(name)) {
                 reportReserved(name, node->lineno);
                 semInfo.errorCount++;
+                /* Still enter the name in scope.  The program will not be
+                 * compiled either way, but without this every later use of
+                 * the name would ALSO be reported as "undeclared" — a
+                 * cascade of errors that all have the same single cause. */
+                addVarToScope(name);
                 break;
             }
 

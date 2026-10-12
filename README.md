@@ -1,6 +1,6 @@
 # CST-405 Project 2: Minimalist Language Compiler
 
-**Author:** Alissa Head (worked alone, so every task below is mine)
+**Author:** Alissa Head (worked alone, so every task below is mine)<br>
 **Course:** CST-405 Compiler Design, Topic 2 (Sep 14 – Oct 11, 2026)
 
 This is a complete compiler for a very small C-like language. It takes a `.cm`
